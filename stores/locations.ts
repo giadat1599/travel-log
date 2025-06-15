@@ -3,14 +3,22 @@ export const useLocationsStore = defineStore("useLocationsStore", () => {
     lazy: true,
   });
   const sidebarStore = useSidebarStore();
+  const mapStore = useMapStore();
 
-  watchEffect(() => {
+  effect(() => {
     if (data.value) {
       sidebarStore.sideBarItems = data.value.map(location => ({
         id: `location-${location.id}`,
         label: location.name,
         icon: "tabler:map-pin-filled",
         href: "#",
+      }));
+
+      mapStore.mapPoints = data.value.map(location => ({
+        id: location.id,
+        label: location.name,
+        lat: location.lat,
+        long: location.long,
       }));
     }
 
