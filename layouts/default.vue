@@ -1,6 +1,12 @@
 <script lang="ts" setup>
 const authStore = useAuthStore();
+const mapStore = useMapStore();
 await authStore.init();
+
+onMounted(async () => {
+  const location = await getCurrentLocation();
+  mapStore.currentLocation = [location.longitude, location.latitude];
+});
 </script>
 
 <template>

@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import type { LngLatLike } from "maplibre-gl";
+import type { MglEvent } from "@indoorequal/vue-maplibre-gl";
+import type { LngLat } from "maplibre-gl";
 
 const colorMode = useColorMode();
 const mapStore = useMapStore();
-const center = ref<LngLatLike>([-1.559482, 47.21322]);
 
 const style = computed(() => {
   return colorMode.value === "dark"
@@ -12,14 +12,25 @@ const style = computed(() => {
 });
 const zoom = 4;
 
+function updateAddedPoint(location: LngLat) {
+  mapStore.addedPoint = {
+    id: 1,
+    name: "Added Point",
+    description: "",
+    lat: location.lat,
+    long: location.lng,
+  };
+}
+
+function onDoubleClick(mglEvent: MglEvent<"dblclick">) {
+  if (mapStore.addedPoint) {
+    mapStore.addedPoint.lat = mglEvent.event.lngLat.lat;
+    mapStore.addedPoint.long = mglEvent.event.lngLat.lng;
+  }
+}
+
 onMounted(async () => {
-  if (mapStore.mapPoints.length === 0) {
-    const location = await getCurrentLocation();
-    center.value = [location.longitude, location.latitude];
-  }
-  else {
-    await mapStore.init();
-  }
+  await mapStore.init();
 });
 </script>
 
@@ -27,8 +38,9 @@ onMounted(async () => {
   <div class="p-4">
     <MglMap
       :map-style="style"
-      :center="center"
+      :center="mapStore.currentLocation"
       :zoom="zoom"
+      @map:dblclick="onDoubleClick"
     >
       <MglNavigationControl />
       <MglMarker
@@ -61,6 +73,25 @@ onMounted(async () => {
             {{ point.description }}
           </p>
         </MglPopup>
+      </MglMarker>
+      <MglMarker
+        v-if="mapStore.addedPoint"
+        draggable
+        :coordinates="[mapStore.addedPoint.long, mapStore.addedPoint.lat]"
+        @update:coordinates="updateAddedPoint"
+      >
+        <template #marker>
+          <div
+            class="tooltip tooltip-top hover:cursor-pointer tooltip-open"
+            data-tip="Drag to your desire location"
+          >
+            <Icon
+              name="tabler:map-pin-filled"
+              size="30"
+              class="text-warning"
+            />
+          </div>
+        </template>
       </MglMarker>
     </MglMap>
   </div>

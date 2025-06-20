@@ -1,8 +1,14 @@
+import type { LngLatLike } from "maplibre-gl";
+
 import type { MapPoint } from "~/lib/types";
+
+import { DEFAULT_CENTER } from "~/lib/constants";
 
 export const useMapStore = defineStore("useMapStore", () => {
   const mapPoints = ref<MapPoint[]>([]);
   const selectedPoint = ref<MapPoint | null>(null);
+  const addedPoint = ref<MapPoint | null>(null);
+  const currentLocation = ref<LngLatLike>(DEFAULT_CENTER);
   const shouldFlyTo = ref(true);
 
   function selectPointWithoutFlyTo(point: MapPoint | null) {
@@ -21,7 +27,6 @@ export const useMapStore = defineStore("useMapStore", () => {
 
     effect(() => {
       const firstPoint = mapPoints.value[0];
-
       if (!firstPoint) {
         return;
       }
@@ -39,6 +44,9 @@ export const useMapStore = defineStore("useMapStore", () => {
     });
 
     effect(() => {
+      if (addedPoint.value) {
+        return;
+      }
       if (selectedPoint.value) {
         if (shouldFlyTo.value) {
           map.map?.flyTo({
@@ -53,12 +61,24 @@ export const useMapStore = defineStore("useMapStore", () => {
         });
       }
     });
+
+    watch(addedPoint, (newValue, oldValue) => {
+      if (newValue && !oldValue) {
+        map.map?.flyTo({
+          center: [newValue.long, newValue.lat],
+          speed: 0.8,
+          zoom: 6,
+        });
+      }
+    }, { immediate: true });
   }
 
   return {
-    mapPoints,
     init,
-    selectedPoint,
     selectPointWithoutFlyTo,
+    mapPoints,
+    selectedPoint,
+    addedPoint,
+    currentLocation,
   };
 });
