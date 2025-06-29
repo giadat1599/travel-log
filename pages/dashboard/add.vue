@@ -3,6 +3,8 @@ import type { FetchError } from "ofetch";
 
 import { toTypedSchema } from "@vee-validate/zod";
 
+import type { NominatimResult } from "~/lib/types";
+
 import { InsertLocationSchema } from "~/lib/db/schema";
 
 const { $csrfFetch } = useNuxtApp();
@@ -29,6 +31,18 @@ function formatCoordinate(value?: number) {
   return value.toFixed(5);
 }
 
+function searchResultSelected(result: NominatimResult) {
+  setFieldValue("name", result.display_name);
+  mapStore.addedPoint = {
+    id: 1,
+    name: "Added Point",
+    description: "",
+    lat: Number(result.lat),
+    long: Number(result.lon),
+    centerMap: true,
+  };
+}
+
 const onSubmit = handleSubmit(async (values) => {
   try {
     submitError.value = "";
@@ -45,7 +59,7 @@ const onSubmit = handleSubmit(async (values) => {
     if (error.data?.data) {
       setErrors(error.data?.data);
     }
-    submitError.value = error.data?.statusMessage || error.statusMessage || "Unknow error occurred";
+    submitError.value = getFetchErrorMessage(error);
   }
   finally {
     loading.value = false;
@@ -109,11 +123,16 @@ effect(() => {
         :error="errors.description"
         :disabled="loading"
       />
-      <p>Drag the <Icon name="tabler:map-pin-filled" class="text-warning" /> to your desired location</p>
-      <p>Or double click on the map</p>
       <p class="text-sm text-gray-400">
-        Current location: {{ formatCoordinate(controlledValues.lat) }}, {{ formatCoordinate(controlledValues.long) }}
+        Current coordinates: {{ formatCoordinate(controlledValues.lat) }}, {{ formatCoordinate(controlledValues.long) }}
       </p>
+      <p>To set the coordinates: </p>
+      <ul class="list-disc ml-4 text-sm">
+        <li>Drag the <Icon name="tabler:map-pin-filled" class="text-warning" /> on the map</li>
+        <li>Double click on the map</li>
+        <li>Search for a location below</li>
+      </ul>
+
       <div class="flex justify-end gap-2">
         <button
           :disabled="loading"
@@ -131,5 +150,7 @@ effect(() => {
         </button>
       </div>
     </form>
+    <div class="divider" />
+    <AppPlaceSearch @result-selected="searchResultSelected" />
   </div>
 </template>
